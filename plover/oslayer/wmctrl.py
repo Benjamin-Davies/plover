@@ -29,9 +29,12 @@ elif PLATFORM == 'mac':
 
 elif PLATFORM in {'linux', 'bsd'}:
 
-    from plover.oslayer.xwmctrl import WmCtrl
+    # from plover.oslayer.xwmctrl import WmCtrl
 
-    wmctrl = WmCtrl()
+    # wmctrl = WmCtrl()
 
-    GetForegroundWindow = wmctrl.get_foreground_window
-    SetForegroundWindow = wmctrl.set_foreground_window
+    # GetForegroundWindow = wmctrl.get_foreground_window
+    # SetForegroundWindow = wmctrl.set_foreground_window
+
+    GetForegroundWindow = lambda: None
+    SetForegroundWindow = lambda: None

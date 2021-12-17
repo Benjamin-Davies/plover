@@ -22,7 +22,8 @@ KEYBOARDCONTROL_NOT_FOUND_FOR_OS = \
         "No keyboard control module was found for platform: %s" % PLATFORM
 
 if PLATFORM in {'linux', 'bsd'}:
-    from plover.oslayer import xkeyboardcontrol as keyboardcontrol
+    # from plover.oslayer import xkeyboardcontrol as keyboardcontrol
+    from plover.oslayer import evdevkeyboardcontrol as keyboardcontrol
 elif PLATFORM == 'win':
     from plover.oslayer import winkeyboardcontrol as keyboardcontrol
 elif PLATFORM == 'mac':

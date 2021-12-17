@@ -160,6 +160,7 @@ def with_display_lock(func):
 class XEventLoop(threading.Thread):
 
     def __init__(self, name='xev'):
+        print("Hello from x key ctl")
         super().__init__()
         self.name += '-' + name
         self._display = display.Display()

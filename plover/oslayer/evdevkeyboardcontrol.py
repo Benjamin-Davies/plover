@@ -60,8 +60,10 @@ class KeyboardCapture(threading.Thread):
             content = line[1:-1]
             print(f'"{plover_key(content)}"')
             if first_char == 'u':
+                print('up')
                 self.key_up(plover_key(content))
             elif first_char == 'd':
+                print('down')
                 self.key_down(plover_key(content))
 
     def start(self):

@@ -32,7 +32,6 @@ UDS_PATH = '/var/plover-evdevd'
 sock = socket(AF_UNIX, SOCK_STREAM)
 sock.connect(UDS_PATH)
 f = sock.makefile('rw')
-sock_write_lock = threading.Lock()
 
 
 def plover_key(name):
@@ -58,12 +57,9 @@ class KeyboardCapture(threading.Thread):
             line = f.readline()
             first_char = line[0]
             content = line[1:-1]
-            print(f'"{plover_key(content)}"')
             if first_char == 'u':
-                print('up')
                 self.key_up(plover_key(content))
             elif first_char == 'd':
-                print('down')
                 self.key_down(plover_key(content))
 
     def start(self):
@@ -73,9 +69,8 @@ class KeyboardCapture(threading.Thread):
         pass
 
     def suppress_keyboard(self, suppressed_keys=()):
-        with sock_write_lock:
-            f.write('s' + ' '.join(map(evdev_key, suppressed_keys)) + '\n')
-            f.flush()
+        f.write('s' + ' '.join(map(evdev_key, suppressed_keys)) + '\n')
+        f.flush()
 
 
 class KeyboardEmulation:

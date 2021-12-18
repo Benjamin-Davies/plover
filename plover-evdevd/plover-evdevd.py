@@ -90,7 +90,7 @@ def listen_kb():
                 if event.value:
                     sock_conn.write('d')
                 else:
-                    sock_conn.write('s')
+                    sock_conn.write('u')
                 sock_conn.write(e.keys[event.code][4:])
                 sock_conn.write('\n')
                 sock_conn.flush()
@@ -135,6 +135,8 @@ def listen_uds():
             sock_conn = conn.makefile('rw')
             while True:
                 line = sock_conn.readline()
+                if len(line) <= 1:
+                    break
                 first_char = line[0]
                 content = line[1:-1]
                 if first_char == 'u':

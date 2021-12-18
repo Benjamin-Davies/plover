@@ -21,31 +21,26 @@ emulate keyboard input.
 """
 
 from functools import wraps
-import errno
-import os
-import string
-import select
 import threading
+from socket import AF_UNIX, SOCK_STREAM, socket
 
 from plover.key_combo import add_modifiers_aliases, parse_key_combo
 from plover import log
 
-from evdev import ecodes as e, UInput, InputDevice, KeyEvent
-from evdev.util import list_devices, categorize
+# The path of the unix domain socket interface
+UDS_PATH = '/var/plover-evdevd'
+sock = socket(AF_UNIX, SOCK_STREAM)
+sock.connect(UDS_PATH)
+f = sock.makefile('rw')
+sock_write_lock = threading.Lock()
 
-# The name assigned to the emulated keyboard
-UINPUT_NAME = 'Plover'
 
-def is_keyboard(path):
-    dev = InputDevice(path)
-    try:
-        if dev.name.startswith == UINPUT_NAME:
-            return False
-        cap = dev.capabilities()
-        return (e.EV_KEY in cap and
-                e.KEY_A in cap[e.EV_KEY])
-    finally:
-        dev.close()
+def plover_key(name):
+    return name.lower()
+
+
+def evdev_key(name):
+    return name.upper()
 
 
 class KeyboardCapture(threading.Thread):
@@ -54,42 +49,31 @@ class KeyboardCapture(threading.Thread):
     def __init__(self):
         """Prepare to listen for keyboard events."""
         super().__init__(name='capture')
-        self.dev = None
-        self.suppress_keys = ()
         self.key_down = lambda key: None
         self.key_up = lambda key: None
 
-    def _capture_first_keyboard(self):
-        path = next(filter(is_keyboard, list_devices()))
-        print('Using device:', path)
-        self.dev = InputDevice(path)
-        print(self.dev.name)
-        pass
-
     def run(self):
-        try:
-            self.dev.grab()
-
-            for event in self.dev.read_loop():
-                if event.type == e.EV_KEY and KeyEvent(event).scancode == e.KEY_ESC:
-                    break
-                print(categorize(event))
-
-        finally:
-            print("Goodbye")
-            self.dev.ungrab()
-            self.dev.close()
+        print('hi')
+        while True:
+            line = f.readline()
+            first_char = line[0]
+            content = line[1:-1]
+            print(f'"{plover_key(content)}"')
+            if first_char == 'u':
+                self.key_up(plover_key(content))
+            elif first_char == 'd':
+                self.key_down(plover_key(content))
 
     def start(self):
-        self._capture_first_keyboard()
         super().start()
 
     def cancel(self):
         pass
 
     def suppress_keyboard(self, suppressed_keys=()):
-        print(suppressed_keys)
-        self.suppress_keys = suppressed_keys
+        with sock_write_lock:
+            f.write('s' + ' '.join(map(evdev_key, suppressed_keys)) + '\n')
+            f.flush()
 
 
 class KeyboardEmulation:

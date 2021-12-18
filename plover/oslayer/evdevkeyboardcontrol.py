@@ -90,7 +90,8 @@ class KeyboardEmulation:
         number_of_backspace -- The number of backspaces to emulate.
 
         """
-        pass
+        f.write('dBACKSPACE\nuBACKSPACE\n' * number_of_backspaces)
+        f.flush()
 
     def send_string(self, s):
         """Emulate the given string.
@@ -102,7 +103,10 @@ class KeyboardEmulation:
         s -- The string to emulate.
 
         """
-        pass
+        for c in s:
+            name = evdev_key(c)
+            f.write(f'd{name}\nu{name}\n')
+        f.flush()
 
     def send_key_combination(self, combo_string):
         """Emulate a sequence of key combinations.

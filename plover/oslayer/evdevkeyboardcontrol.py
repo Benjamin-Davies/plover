@@ -81,7 +81,7 @@ SPECIAL_KEYS = {
 
 # Save some codes that we use explicitly
 BACKSPACE = KEYS_TO_SCANCODE['BackSpace']
-SHIFT_L = KEYS_TO_SCANCODE['shift']
+SHIFT = KEYS_TO_SCANCODE['shift']
 
 # The path of the unix domain socket interface
 UDS_PATH = '/var/plover-evdevd'
@@ -128,6 +128,15 @@ class KeyboardCapture(threading.Thread):
         f.flush()
 
 
+def key_event(keycode, pressed):
+    if pressed:
+        f.write('d')
+    else:
+        f.write('u')
+    f.write(str(keycode))
+    f.write('\n')
+
+
 class KeyboardEmulation:
     """Emulate keyboard events."""
 
@@ -145,7 +154,9 @@ class KeyboardEmulation:
         number_of_backspace -- The number of backspaces to emulate.
 
         """
-        f.write(f'd{BACKSPACE}\nu{BACKSPACE}\n' * number_of_backspaces)
+        for _ in range(number_of_backspaces):
+            key_event(BACKSPACE, True)
+            key_event(BACKSPACE, False)
         f.flush()
 
     def send_string(self, s):
@@ -168,13 +179,14 @@ class KeyboardEmulation:
             elif c in SPECIAL_KEYS:
                 c = SPECIAL_KEYS[c]
 
-            name = evdev_key(c)
+            keycode = evdev_key(c)
 
             if upper:
-                f.write(f'd{SHIFT_L}\n')
-            f.write(f'd{name}\nu{name}\n')
+                key_event(SHIFT, True)
+            key_event(keycode, True)
+            key_event(keycode, False)
             if upper:
-                f.write(f'u{SHIFT_L}\n')
+                key_event(SHIFT, False)
         f.flush()
 
     def send_key_combination(self, combo_string):
@@ -199,4 +211,8 @@ class KeyboardEmulation:
         and release the Tab key, and then release the left Alt key.
 
         """
-        pass
+        key_events = parse_key_combo(combo_string,
+                                     key_name_to_key_code=evdev_key)
+        for keycode, pressed in key_events:
+            key_event(keycode, pressed)
+        f.flush()

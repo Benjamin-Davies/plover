@@ -122,18 +122,21 @@ def listen_uds():
         with conn:
             sock_conn = conn.makefile('rw')
             while True:
-                line = sock_conn.readline()
-                if len(line) <= 1:
-                    break
-                first_char = line[0]
-                content = line[1:-1]
-                if first_char == 'u':
-                    write_key(content, 0)
-                elif first_char == 'd':
-                    write_key(content, 1)
-                elif first_char == 's':
-                    suppress_keys = set(map(int, content.split()))
-                    print('Supressing keys:', suppress_keys)
+                try:
+                    line = sock_conn.readline()
+                    if len(line) <= 1:
+                        break
+                    first_char = line[0]
+                    content = line[1:-1]
+                    if first_char == 'u':
+                        write_key(content, 0)
+                    elif first_char == 'd':
+                        write_key(content, 1)
+                    elif first_char == 's':
+                        suppress_keys = set(map(int, content.split()))
+                        print('Supressing keys:', suppress_keys)
+                except Exception as e:
+                    print(e)
 
 
 listen_kb_thread = Thread(target=listen_kb)

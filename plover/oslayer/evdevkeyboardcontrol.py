@@ -35,9 +35,9 @@ KEYS = '''
 Reserved
   Escape 1 2 3 4 5 6 7 8 9 0 - = BackSpace
     Tab   q w e r t y u i o p [ ] Return
-    Ctrl_L a s d f g h j k l ; ' `
- Shift_L \\ z x c v b n m , . / Shift_R
-        _* Alt_L space CapsLock
+ control_l a s d f g h j k l ; ' `
+ shift_l \\ z x c v b n m , . / shift_r
+        _* alt_l space CapsLock
 F1 F2 F3 F4 F5 F6 F7 F8 F9 F10
 NumLock ScrollLock
     _7 _8 _9 _-
@@ -48,7 +48,7 @@ NumLock ScrollLock
 ZenkakuHankaku 102nd
 F11 F12 RO
 Katakana Hiragana Henkan KatakanaHiragana Muhenkan
-_JP, _Return Ctrl_R _/ SysRq Alt_R LineFeed
+_JP, _Return control_r _/ SysRq alt_r LineFeed
     Home  Up  PageUp
     Left      Right
     End  Down PageDown
@@ -57,9 +57,10 @@ Mute VolumeDown VolumeUp Power
 _= _+/- Pause Scale
 
 _, Hangeul Hanja Yen
-Meta_L Meta_R Compose
+super_l super_r Compose
 '''.split()
 KEYS_TO_SCANCODE = {key: scancode for scancode, key in enumerate(KEYS)}
+add_modifiers_aliases(KEYS_TO_SCANCODE)
 
 # Keys other than capitals requiring the shift key
 SHIFTED_KEYS = {
@@ -80,7 +81,7 @@ SPECIAL_KEYS = {
 
 # Save some codes that we use explicitly
 BACKSPACE = KEYS_TO_SCANCODE['BackSpace']
-SHIFT_L = KEYS_TO_SCANCODE['BackSpace']
+SHIFT_L = KEYS_TO_SCANCODE['shift']
 
 # The path of the unix domain socket interface
 UDS_PATH = '/var/plover-evdevd'

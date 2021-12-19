@@ -12,6 +12,13 @@ UINPUT_NAME = 'Plover'
 # The path of the unix domain socket interface
 UDS_PATH = '/var/plover-evdevd'
 
+MODIFIER_KEYS = set([
+    e.KEY_LEFTSHIFT, e.KEY_RIGHTSHIFT,
+    e.KEY_LEFTCTRL, e.KEY_RIGHTCTRL,
+    e.KEY_LEFTALT, e.KEY_RIGHTALT,
+    e.KEY_LEFTMETA, e.KEY_RIGHTMETA,
+])
+
 
 # When run, there will be two threads.
 # One thread (listen_kb) will wait for keyboard events, and either pass them on to uinput, or intercept them and pass them to the UDS.
@@ -59,6 +66,11 @@ def write_key(name, value):
         uinput.syn()
 
 
+def no_modifiers(dev):
+    return not any(key in MODIFIER_KEYS
+                   for key in dev.active_keys())
+
+
 def listen_kb():
     global sock_conn, suppress_keys, uinput, uinput_lock
 
@@ -74,7 +86,7 @@ def listen_kb():
         uinput = UInput.from_device(dev)
 
         for event in dev.read_loop():
-            if event.type == e.EV_KEY and event.code in suppress_keys:
+            if event.type == e.EV_KEY and event.code in suppress_keys and no_modifiers(dev):
                 if event.value:
                     sock_conn.write('d')
                 else:

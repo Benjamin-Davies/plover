@@ -54,21 +54,9 @@ def find_first_keyboard():
 
 
 def write_key(name, value):
-    const_name = 'KEY_' + name
-    if const_name not in e.ecodes:
-        print('Unknown key:', name)
-        return
     with uinput_lock:
-        uinput.write(e.EV_KEY, e.ecodes[const_name], value)
+        uinput.write(e.EV_KEY, int(name), value)
         uinput.syn()
-
-
-def key_code(name):
-    const_name = 'KEY_' + name
-    if const_name not in e.ecodes:
-        print('Unknown key:', name)
-        return
-    return e.ecodes[const_name]
 
 
 def listen_kb():
@@ -91,7 +79,7 @@ def listen_kb():
                     sock_conn.write('d')
                 else:
                     sock_conn.write('u')
-                sock_conn.write(e.keys[event.code][4:])
+                sock_conn.write(str(event.code))
                 sock_conn.write('\n')
                 sock_conn.flush()
 
@@ -144,7 +132,7 @@ def listen_uds():
                 elif first_char == 'd':
                     write_key(content, 1)
                 elif first_char == 's':
-                    suppress_keys = set(map(key_code, content.split()))
+                    suppress_keys = set(map(int, content.split()))
                     print('Supressing keys:', suppress_keys)
 
 

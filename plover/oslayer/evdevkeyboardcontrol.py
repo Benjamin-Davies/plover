@@ -27,6 +27,61 @@ from socket import AF_UNIX, SOCK_STREAM, socket
 from plover.key_combo import add_modifiers_aliases, parse_key_combo
 from plover import log
 
+# List of keys with index = key id
+# I'm unsure if all of these are available to Plover, but they're here for completeness sake
+# See also /usr/include/linux/input-event-codes.h
+# TODO: check existing names for KP and Meta
+KEYS = '''
+Reserved
+  Escape 1 2 3 4 5 6 7 8 9 0 - = BackSpace
+    Tab   q w e r t y u i o p [ ] Return
+    Ctrl_L a s d f g h j k l ; ' `
+ Shift_L \\ z x c v b n m , . / Shift_R
+        _* Alt_L space CapsLock
+F1 F2 F3 F4 F5 F6 F7 F8 F9 F10
+NumLock ScrollLock
+    _7 _8 _9 _-
+    _4 _5 _6 _+
+    _1 _2 _3
+    _0 _. _
+
+ZenkakuHankaku 102nd
+F11 F12 RO
+Katakana Hiragana Henkan KatakanaHiragana Muhenkan
+_JP, _Return Ctrl_R _/ SysRq Alt_R LineFeed
+    Home  Up  PageUp
+    Left      Right
+    End  Down PageDown
+    Insert Delete Macro
+Mute VolumeDown VolumeUp Power
+_= _+/- Pause Scale
+
+_, Hangeul Hanja Yen
+Meta_L Meta_R Compose
+'''.split()
+KEYS_TO_SCANCODE = {key: scancode for scancode, key in enumerate(KEYS)}
+
+# Keys other than capitals requiring the shift key
+SHIFTED_KEYS = {
+    '~': '`',
+    '!': '1', '@': '2', '#': '3', '$': '4', '%': '5',
+    '&': '7', '^': '6', '*': '8', '(': '9', ')': '0',
+    '_': '-', '+': '=',
+    '{': '[', '}': ']', '|': '\\',
+    ':': ';', '"': '\'',
+    '<': ',', '>': '.', '?': '/',
+}
+# Keys who's ascii representation does not match their key-name
+SPECIAL_KEYS = {
+    ' ': 'space',
+    '\n': 'Return',
+    '\t': 'Tab',
+}
+
+# Save some codes that we use explicitly
+BACKSPACE = KEYS_TO_SCANCODE['BackSpace']
+SHIFT_L = KEYS_TO_SCANCODE['BackSpace']
+
 # The path of the unix domain socket interface
 UDS_PATH = '/var/plover-evdevd'
 sock = socket(AF_UNIX, SOCK_STREAM)
@@ -35,11 +90,11 @@ f = sock.makefile('rw')
 
 
 def plover_key(name):
-    return name.lower()
+    return KEYS[int(name)]
 
 
 def evdev_key(name):
-    return name.upper()
+    return str(KEYS_TO_SCANCODE[name])
 
 
 class KeyboardCapture(threading.Thread):
@@ -52,7 +107,6 @@ class KeyboardCapture(threading.Thread):
         self.key_up = lambda key: None
 
     def run(self):
-        print('hi')
         while True:
             line = f.readline()
             first_char = line[0]
@@ -90,7 +144,7 @@ class KeyboardEmulation:
         number_of_backspace -- The number of backspaces to emulate.
 
         """
-        f.write('dBACKSPACE\nuBACKSPACE\n' * number_of_backspaces)
+        f.write(f'd{BACKSPACE}\nu{BACKSPACE}\n' * number_of_backspaces)
         f.flush()
 
     def send_string(self, s):
@@ -104,8 +158,22 @@ class KeyboardEmulation:
 
         """
         for c in s:
+            upper = c.isupper()
+            if upper:
+                c = c.lower()
+            elif c in SHIFTED_KEYS:
+                upper = True
+                c = SHIFTED_KEYS[c]
+            elif c in SPECIAL_KEYS:
+                c = SPECIAL_KEYS[c]
+
             name = evdev_key(c)
+
+            if upper:
+                f.write(f'd{SHIFT_L}\n')
             f.write(f'd{name}\nu{name}\n')
+            if upper:
+                f.write(f'u{SHIFT_L}\n')
         f.flush()
 
     def send_key_combination(self, combo_string):

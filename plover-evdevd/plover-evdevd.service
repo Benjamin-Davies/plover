@@ -1,0 +1,7 @@
+[Unit]
+Description=Plover evdev daemon
+
+[Service]
+ExecStart=/usr/bin/plover-evdevd
+KillMode=process
+Restart=always

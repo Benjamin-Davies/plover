@@ -1,0 +1,8 @@
+[package]
+name = "plover-evdevd"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+evdev-sys = "^0.2.4"
+glob = "^0.3.0"

@@ -54,7 +54,7 @@ fn listen_kb(mut dev: Device, uinput: Arc<Mutex<UInput>>, suppress_keys: Arc<Mut
             if (*suppress_keys.lock().unwrap()).contains(&key) && modifiers.len() == 0 {
                 let Key(code) = key;
                 let prefix = if pressed { 'd' } else { 'u' };
-                writeln!(stdout, "{}{}", prefix, code);
+                writeln!(stdout, "{}{}", prefix, code).unwrap();
                 continue;
             }
         }
@@ -84,12 +84,14 @@ fn listen_stdio(uinput: Arc<Mutex<UInput>>, suppress_keys: Arc<Mutex<HashSet<Key
                     if let Ok(code) = content.parse() {
                         let mut uinput = uinput.lock().unwrap();
                         (*uinput).write_event(Event::Key(Key(code), true)).unwrap();
+                        (*uinput).syn().unwrap();
                     }
                 }
                 'u' => {
                     if let Ok(code) = content.parse() {
                         let mut uinput = uinput.lock().unwrap();
                         (*uinput).write_event(Event::Key(Key(code), false)).unwrap();
+                        (*uinput).syn().unwrap();
                     }
                 }
                 's' => {

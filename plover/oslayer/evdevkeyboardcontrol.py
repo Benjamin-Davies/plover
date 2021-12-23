@@ -21,8 +21,8 @@ emulate keyboard input.
 """
 
 from functools import wraps
+from subprocess import Popen, PIPE
 import threading
-from socket import AF_UNIX, SOCK_STREAM, socket
 
 from plover.key_combo import add_modifiers_aliases, parse_key_combo
 from plover import log
@@ -83,11 +83,23 @@ SPECIAL_KEYS = {
 BACKSPACE = KEYS_TO_SCANCODE['BackSpace']
 SHIFT = KEYS_TO_SCANCODE['shift']
 
-# The path of the unix domain socket interface
-UDS_PATH = '/var/plover-evdevd'
-sock = socket(AF_UNIX, SOCK_STREAM)
-sock.connect(UDS_PATH)
-f = sock.makefile('rw')
+p = None
+p_refcount = 0
+
+def start():
+    global p, p_refcount
+    p_refcount += 1
+    if not p:
+        p = Popen('plover-evdevd', stdout=PIPE, stdin=PIPE, text=True)
+
+def stop():
+    global p, p_refcount
+    p_refcount -= 1
+    if p_refcount <= 0:
+        p_refcount = 0
+        if p:
+            p.terminate()
+            p = None
 
 
 def plover_key(name):
@@ -109,7 +121,7 @@ class KeyboardCapture(threading.Thread):
 
     def run(self):
         while True:
-            line = f.readline()
+            line = p.stdout.readline()
             first_char = line[0]
             content = line[1:-1]
             if first_char == 'u':
@@ -118,23 +130,28 @@ class KeyboardCapture(threading.Thread):
                 self.key_down(plover_key(content))
 
     def start(self):
+        start()
         super().start()
 
     def cancel(self):
-        pass
+        stop()
 
     def suppress_keyboard(self, suppressed_keys=()):
-        f.write('s' + ' '.join(map(evdev_key, suppressed_keys)) + '\n')
-        f.flush()
+        try:
+            p.stdin.write('s' + ' '.join(map(evdev_key, suppressed_keys)) + '\n')
+            p.stdin.flush()
+        except Exception as e:
+            log.warn(e)
+            stop()
 
 
 def key_event(keycode, pressed):
     if pressed:
-        f.write('d')
+        p.stdin.write('d')
     else:
-        f.write('u')
-    f.write(str(keycode))
-    f.write('\n')
+        p.stdin.write('u')
+    p.stdin.write(str(keycode))
+    p.stdin.write('\n')
 
 
 class KeyboardEmulation:
@@ -142,7 +159,10 @@ class KeyboardEmulation:
 
     def __init__(self):
         """Prepare to emulate keyboard events."""
-        pass
+        start()
+
+    def __del__(self):
+        stop()
 
     def send_backspaces(self, number_of_backspaces):
         """Emulate the given number of backspaces.
@@ -157,7 +177,7 @@ class KeyboardEmulation:
         for _ in range(number_of_backspaces):
             key_event(BACKSPACE, True)
             key_event(BACKSPACE, False)
-        f.flush()
+        p.stdin.flush()
 
     def send_string(self, s):
         """Emulate the given string.
@@ -187,7 +207,7 @@ class KeyboardEmulation:
             key_event(keycode, False)
             if upper:
                 key_event(SHIFT, False)
-        f.flush()
+        p.stdin.flush()
 
     def send_key_combination(self, combo_string):
         """Emulate a sequence of key combinations.
@@ -215,4 +235,4 @@ class KeyboardEmulation:
                                      key_name_to_key_code=evdev_key)
         for keycode, pressed in key_events:
             key_event(keycode, pressed)
-        f.flush()
+        p.stdin.flush()

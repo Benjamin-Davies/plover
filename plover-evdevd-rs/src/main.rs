@@ -59,9 +59,10 @@ fn listen_kb(mut dev: Device, uinput: Arc<Mutex<UInput>>, suppress_keys: Arc<Mut
             }
         }
 
-        {
+        if event != Event::Syn {
             let mut uinput = uinput.lock().unwrap();
             (*uinput).write_event(event).unwrap();
+            (*uinput).syn().unwrap();
         }
     }
 }

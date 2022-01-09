@@ -163,7 +163,7 @@ impl Drop for UInput {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Event {
     Syn,
     Key(Key, bool),

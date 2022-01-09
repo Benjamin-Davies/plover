@@ -59,7 +59,7 @@ _= _+/- Pause Scale
 _, Hangeul Hanja Yen
 super_l super_r Compose
 '''.split()
-KEYS_TO_SCANCODE = {key: scancode for scancode, key in enumerate(KEYS)}
+KEYS_TO_SCANCODE = {key.lower(): scancode for scancode, key in enumerate(KEYS)}
 add_modifiers_aliases(KEYS_TO_SCANCODE)
 
 # Keys other than capitals requiring the shift key
@@ -75,12 +75,12 @@ SHIFTED_KEYS = {
 # Keys who's ascii representation does not match their key-name
 SPECIAL_KEYS = {
     ' ': 'space',
-    '\n': 'Return',
-    '\t': 'Tab',
+    '\n': 'return',
+    '\t': 'tab',
 }
 
 # Save some codes that we use explicitly
-BACKSPACE = KEYS_TO_SCANCODE['BackSpace']
+BACKSPACE = KEYS_TO_SCANCODE['backspace']
 SHIFT = KEYS_TO_SCANCODE['shift']
 
 p = None
@@ -107,7 +107,7 @@ def plover_key(name):
 
 
 def evdev_key(name):
-    return str(KEYS_TO_SCANCODE[name])
+    return str(KEYS_TO_SCANCODE[name.lower()])
 
 
 class KeyboardCapture(threading.Thread):
